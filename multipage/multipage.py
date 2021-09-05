@@ -48,11 +48,14 @@ def multipage(document: vp.Document, overlap: vp.LengthType) -> vp.Document:
     # Now size[0] < size[1]
     print("New size =", size)
 
-    # new_doc = vp.Document(page_size=(size[0], size[1] / 2))
-    new_doc = vp.Document(page_size=size)
+    new_doc = vp.Document(page_size=(size[0], size[1] / 2))
+    # new_doc = vp.Document(page_size=size)
 
     for layer, lc in document.layers.items():
         upper_half_lc, lower_half_lc = _get_half_crops(lc, size)
+        lower_half_lc.translate(0, -size[1] / 2)
+        lower_half_lc.rotate(np.pi)
+        lower_half_lc.translate(size[0], size[1] / 2)
         new_doc.add(upper_half_lc, layer)
         new_doc.add(lower_half_lc, layer + 1)
 
