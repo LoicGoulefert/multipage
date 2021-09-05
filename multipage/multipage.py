@@ -30,25 +30,22 @@ def _get_half_crops(
 
 
 @click.command()
-@click.option("-o", "--overlap", type=vp.LengthType(), default=0)
+@click.option("-o", "--overlap", type=vp.LengthType(), default=0, help="")
+@click.option("-v", "--verbose", is_flag=True, default=False, help="print logs")
 @vp.global_processor
-def multipage(document: vp.Document, overlap: vp.LengthType) -> vp.Document:
+def multipage(document: vp.Document, overlap: vp.LengthType, verbose: bool) -> vp.Document:
     """
     ...
     """
-    size = document.page_size
-    print("Input size =", size)
+    input_size = document.page_size
+    layer_count = len(document.layers.keys())
 
     # Convert to portrait
-    if size[0] > size[1]:
-        document = _to_portrait(document, size)
-        size = document.page_size
+    if input_size[0] > input_size[1]:
+        document = _to_portrait(document, input_size)
 
-    # Now size[0] < size[1]
-    print("New size =", size)
-
+    size = document.page_size
     new_doc = vp.Document(page_size=(size[0], size[1] / 2))
-    # new_doc = vp.Document(page_size=size)
 
     for layer, lc in document.layers.items():
         upper_half_lc, lower_half_lc = _get_half_crops(lc, size)
@@ -56,9 +53,17 @@ def multipage(document: vp.Document, overlap: vp.LengthType) -> vp.Document:
         lower_half_lc.rotate(np.pi)
         lower_half_lc.translate(size[0], size[1] / 2)
         new_doc.add(upper_half_lc, layer)
-        new_doc.add(lower_half_lc, layer + 1)
+        new_doc.add(lower_half_lc, layer + layer_count)
 
-    print("new_doc size=", new_doc.page_size)
+    if verbose:
+        print()
+        print("===== multipage =====")
+        print(f"Input size: {input_size[0]:.2f} x {input_size[1]:.2f}")
+        print(f"Output size: {new_doc.page_size[0]:.2f} x {new_doc.page_size[1]:.2f}")
+        print("Layer correspondance table:")
+        print("\n".join(f"{l+1} -> [{l+1}, {l+1+layer_count}]" for l in range(layer_count)))
+        print()
+
     return new_doc
 
 
