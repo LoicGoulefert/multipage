@@ -1,10 +1,9 @@
 from copy import deepcopy
 from typing import Tuple
+
 import click
-import vpype as vp
-from vpype.geometry import crop
 import numpy as np
-from vpype.model import LineCollection
+import vpype as vp
 
 
 def _to_portrait(document: vp.Document, size: Tuple[float, float]) -> vp.Document:
@@ -21,7 +20,7 @@ def _to_portrait(document: vp.Document, size: Tuple[float, float]) -> vp.Documen
 
 def _get_half_crops(
     lc: vp.LineCollection, size: Tuple[float, float]
-) -> Tuple[LineCollection, LineCollection]:
+) -> Tuple[vp.LineCollection, vp.LineCollection]:
     upper_half_lc = deepcopy(lc)
     lower_half_lc = deepcopy(lc)
     upper_half_lc.crop(0, size[1] / 2, size[0], 0)
