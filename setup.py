@@ -1,6 +1,5 @@
 from setuptools import setup
 
-
 with open("README.md") as f:
     readme = f.read()
 
@@ -18,11 +17,11 @@ setup(
     license=license,
     packages=["multipage"],
     install_requires=[
-        'click',
-        'vpype',
+        "click",
+        "vpype>=1.9, <2.0",
     ],
-    entry_points='''
+    entry_points="""
             [vpype.plugins]
             multipage=multipage.multipage:multipage
-        ''',
+        """,
 )

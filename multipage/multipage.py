@@ -4,6 +4,9 @@ from typing import Tuple
 import click
 import numpy as np
 import vpype as vp
+import vpype_cli
+from shapely.geometry import LineString, Polygon
+from shapely.strtree import STRtree
 
 
 def _to_portrait(document: vp.Document, size: Tuple[float, float]) -> vp.Document:
@@ -16,6 +19,26 @@ def _to_portrait(document: vp.Document, size: Tuple[float, float]) -> vp.Documen
         reoriented_doc.add(lc, layer)
 
     return reoriented_doc
+
+
+def _get_query_geoms(size: float, overlap: float) -> Tuple[LineString, LineString, LineString]:
+    half_h = size[1] / 2
+    offset = overlap / 2
+    upper_rect = LineString([(0, 0), (size[0], 0), (size[0], half_h), (0, half_h), (0, 0)])
+    lower_rect = LineString(
+        [(0, half_h), (size[0], half_h), (size[0], size[1]), (0, size[1]), (0, half_h)]
+    )
+    overlap_rect = LineString(
+        [
+            (0, half_h - offset),
+            (size[0], half_h - offset),
+            (size[0], half_h + offset),
+            (0, half_h + offset),
+            (0, half_h - offset),
+        ]
+    )
+
+    return upper_rect, lower_rect, overlap_rect
 
 
 def _get_half_crops(
@@ -32,8 +55,10 @@ def _get_half_crops(
 @click.command()
 @click.option("-o", "--overlap", type=vp.LengthType(), default=0, help="")
 @click.option("-v", "--verbose", is_flag=True, default=False, help="print logs")
-@vp.global_processor
-def multipage(document: vp.Document, overlap: vp.LengthType, verbose: bool) -> vp.Document:
+@vpype_cli.global_processor
+def multipage(
+    document: vp.Document, overlap: vpype_cli.LengthType, verbose: bool
+) -> vp.Document:
     """
     ...
     """
@@ -46,14 +71,26 @@ def multipage(document: vp.Document, overlap: vp.LengthType, verbose: bool) -> v
 
     size = document.page_size
     new_doc = vp.Document(page_size=(size[0], size[1] / 2))
+    upper_rect, lower_rect, overlap_rect = _get_query_geoms(size, overlap)
 
     for layer, lc in document.layers.items():
-        upper_half_lc, lower_half_lc = _get_half_crops(lc, size)
-        lower_half_lc.translate(0, -size[1] / 2)
-        lower_half_lc.rotate(np.pi)
-        lower_half_lc.translate(size[0], size[1] / 2)
-        new_doc.add(upper_half_lc, layer)
-        new_doc.add(lower_half_lc, layer + layer_count)
+        print(f"Overlap={overlap}")
+        line_array = []
+        if overlap == 0:
+            upper_half_lc, lower_half_lc = _get_half_crops(lc, size)
+            lower_half_lc.translate(0, -size[1] / 2)
+            lower_half_lc.rotate(np.pi)
+            lower_half_lc.translate(size[0], size[1] / 2)
+            new_doc.add(upper_half_lc, layer)
+            new_doc.add(lower_half_lc, layer + layer_count)
+        else:
+            tree = STRtree(lc.as_mls().geoms)
+            #  On va découper les geoms de ce layer à un point random DANS overlap_rect
+            # plusieurs cas:
+            # (1) geom 'within' overlap_rect -> pas de split
+            # (2) geom 'intersect' overlap_rect -> ..?
+            p = Polygon(overlap_rect)
+            print(tree.query(p))
 
     if verbose:
         print()
