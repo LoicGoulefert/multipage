@@ -53,7 +53,7 @@ def _get_half_crops(
 
 
 @click.command()
-@click.option("-o", "--overlap", type=vp.LengthType(), default=0, help="")
+@click.option("-o", "--overlap", type=vpype_cli.LengthType(), default=0, help="")
 @click.option("-v", "--verbose", is_flag=True, default=False, help="print logs")
 @vpype_cli.global_processor
 def multipage(
